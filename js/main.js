@@ -34,9 +34,10 @@ function preload() {
     this.load.spritesheet('tileset', 'assets/map/tilesheet.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image('sprite','assets/sprites/sprite.png');
     this.load.html('nameform', 'assets/text/form.html');
-};
+}
 
-var scene;
+let scene;
+let playerText = { text: null, timer: null};
 
 function create(){
 
@@ -51,19 +52,18 @@ function create(){
     layer.inputEnabled = true; // Allows clicking on the map ; it's enough to do it on the last layer
     this.input.on('pointerup', getCoordinates, this);
 
-    element = this.add.dom(24*32 - 100, 17*32 - 20).createFromCache('nameform');
-
-    var keyObj = scene.input.keyboard.addKey('ENTER');
+    this.add.dom(24*32 - 100, 17*32 - 20).createFromCache('nameform');
+    let keyObj = scene.input.keyboard.addKey('ENTER');
     keyObj.on('up', function() {
     	var inputText = document.getElementById('nameField');
     	if (inputText.value !== '') {
-    		sendChat(inputText.value)
+    		sendChat(inputText.value);
     		inputText.value = '';	
     	}
-    })
+    });
 
  	Client.askNewPlayer();
-};
+}
 
 sendChat = function(text){
     Client.sendChat(text);
@@ -75,7 +75,7 @@ getCoordinates = function(pointer){
 
 addNewPlayer = function(id,x,y){
     scene.playerMap[id] = scene.add.container(x,y);
-    var sprite = scene.add.sprite(0,0,'sprite');
+    let sprite = scene.add.sprite(0,0,'sprite');
 	scene.playerMap[id].add(sprite);    
     
     // initialize playerObjects
@@ -83,12 +83,12 @@ addNewPlayer = function(id,x,y){
 };
 
 movePlayer = function(id,x,y){
-    var player = scene.playerMap[id];
-    var distance = Phaser.Math.Distance.Between(player.x,player.y,x,y);
-    var duration = distance*2;
-    var dx = x - player.x;
-    var dy = y - player.y;
-    var tween = scene.tweens.add({
+    let player = scene.playerMap[id];
+    let distance = Phaser.Math.Distance.Between(player.x,player.y,x,y);
+    let duration = distance*2;
+    let dx = x - player.x;
+    let dy = y - player.y;
+    scene.tweens.add({
     	targets: player,
     	x: "+=" + dx,
     	y: "+=" + dy,
@@ -96,37 +96,40 @@ movePlayer = function(id,x,y){
     });
 };
 
+function tweenAndRemoveObj(obj, duration) {
+    scene.tweens.add({
+        alpha: 0,
+        targets: obj,
+        duration: duration,
+        onComplete: function(tween) {
+            let obj = tween.targets[0];
+            obj.destroy();
+        }
+    })
+}
+
 sayPlayer = function(id,text){
-    var player = scene.playerMap[id];
-    var style = { font: "14px Arial", fill: "#000000", align: "center"};
-    if ("text" in player.playerObjects && player.playerObjects["text"] != null) {
-        player.playerObjects["text"].destroy();
+    let player = scene.playerMap[id];
+    let style = { font: "14px Arial", fill: "#000000", align: "center"};
+    if (playerText.text != null) {
+        if (playerText.timer != null) {
+            playerText.timer.remove();
+            playerText.timer = null;
+        }
+        tweenAndRemoveObj(playerText.text, 10);
+        playerText.text = null;
     }
-    player.playerObjects["text"] = scene.add.text(0, 0, text, style);
-    player.playerObjects["text"].setOrigin(0.5, 2.5);
-    player.add(player.playerObjects["text"]);
+    playerText.text = scene.add.text(0, 0, text, style);
+    playerText.text.setOrigin(0.5, 2.5);
+    player.add(playerText.text);
 
-    var textlen = text.length;
-    scene.time.addEvent({
-    	delay: 2000 + 1000 * textlen / 10,
+    let text_len = text.length;
+    playerText.timer = scene.time.addEvent({
+    	delay: 2000 + 1000 * text_len / 10,
     	callback: function() {
-
-    		var obj = player.playerObjects["text"];
-    		if (obj == null) { return true };
-
-        	scene.tweens.add({
-	        	alpha: 0,
-	        	targets: obj,
-	        	duration: 1500,
-	        	onComplete: function(tween) {
-	        		var obj = tween.targets[0];
-	        		if (obj != null) {
-	        			player.remove(obj);
-	        			player.playerObjects["text"] = null
-	        			obj.destroy();	
-	        		}
-	        	}
-        	})
+    		if (playerText.text != null) {
+                tweenAndRemoveObj(playerText.text, 1500);
+    		}
     	}
     });
 };
