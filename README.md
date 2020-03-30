@@ -1,4 +1,9 @@
-# basic-mmo-phaser
+# basic-mmo-phaser3
+
+This was forked from https://github.com/Jerenaux/basic-mmo-phaser to modify for phaser3 and extend with text chat output.
+
+Demo running on: https://phaser3-mmo.herokuapp.com/
+
 Very basic multiplayer online game example made with Phaser, Node.js and Socket.io.
 
 The tutorial corresponding to this game can be found [here](http://www.dynetisgames.com/2017/03/06/how-to-make-a-multiplayer-online-game-with-phaser-socket-io-and-node-js/).
