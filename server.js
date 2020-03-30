@@ -2,6 +2,8 @@ var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io').listen(server);
+var sprite_names = ['guy', 'albert', 'bartender', 'drunkard0', 'drunkard1'];
+
 
 app.use('/css',express.static(__dirname + '/css'));
 app.use('/js',express.static(__dirname + '/js'));
@@ -20,14 +22,19 @@ server.listen(process.env.PORT || 8081,function(){
 io.on('connection',function(socket){
 
     socket.on('newplayer',function(){
+
+        let sprite_int = Math.floor(Math.random() * sprite_names.length);
+
         socket.player = {
             id: server.lastPlayderID++,
             x: randomInt(100,400),
             y: randomInt(100,400),
-            name: "Anon"
+            name: "Anon",
+            sprite_int: sprite_int
         };
+
         socket.emit('allplayers',getAllPlayers());
-        socket.broadcast.emit('newplayer',socket.player);
+        socket.broadcast.emit('newplayer', socket.player);
 
         socket.on('click',function(data){
             console.log('click to '+data.x+', '+data.y);

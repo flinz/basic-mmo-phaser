@@ -27,12 +27,12 @@ Client.sendName = function(text){
 };
 
 Client.socket.on('newplayer',function(data){
-    addNewPlayer(data.id,data.x,data.y);
+    addNewPlayer(data.id,data.x,data.y,data.name,data.sprite_int);
 });
 
 Client.socket.on('allplayers',function(data){
     for(var i = 0; i < data.length; i++){
-        addNewPlayer(data[i].id,data[i].x,data[i].y,data[i].name);
+        addNewPlayer(data[i].id,data[i].x,data[i].y,data[i].name,data[i].sprite_int);
     }
 
     Client.socket.on('move',function(data){

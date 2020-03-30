@@ -29,12 +29,21 @@ game = new Phaser.Game(config);
  * E-mail: jerome.renaux@gmail.com
  */
 
+let sprite_names = ['guy', 'albert', 'bartender', 'drunkard0', 'drunkard1'];
+
 function preload() {
     this.load.tilemapTiledJSON('map', 'assets/map/example_map.json');
     this.load.spritesheet('tileset', 'assets/map/tilesheet.png', { frameWidth: 32, frameHeight: 32 });
+
     this.load.image('sprite','assets/sprites/sprite.png');
     this.load.html('chatform', 'assets/text/form_chat.html');
     this.load.html('nameform', 'assets/text/form_name.html');
+
+    for (const sprite_name of sprite_names) {
+        this.load.spritesheet('sprite_' + sprite_name,
+            'assets/sprites/characters/' + sprite_name + '.png',
+            { frameWidth: 16, frameHeight: 16 });
+    }
 }
 
 let scene;
@@ -73,7 +82,42 @@ function create(){
         }
     });
 
- 	Client.askNewPlayer();
+    for (const sprite_key of sprite_names) {
+        let sprite_name = 'sprite_' + sprite_key;
+        // sprites
+        scene.anims.create({
+            key: sprite_name + '_idle',
+            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [2,2,2,12]}),
+            frameRate: 1,
+            repeat: -1
+        });
+        scene.anims.create({
+            key: sprite_name + '_left',
+            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [16,17]}),
+            frameRate: 8,
+            repeat: -1
+        });
+        scene.anims.create({
+            key: sprite_name + '_right',
+            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [8,9]}),
+            frameRate: 8,
+            repeat: -1
+        });
+        scene.anims.create({
+            key: sprite_name + '_up',
+            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [4,5]}),
+            frameRate: 8,
+            repeat: -1
+        });
+        scene.anims.create({
+            key: sprite_name + '_down',
+            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [12,13]}),
+            frameRate: 8,
+            repeat: -1
+        });
+    }
+
+    Client.askNewPlayer();
 }
 
 sendName = function(text){
@@ -88,17 +132,25 @@ getCoordinates = function(pointer){
     Client.sendClick(pointer.worldX, pointer.worldY);
 };
 
-addNewPlayer = function(id,x,y,name){
+addNewPlayer = function(id,x,y,name,sprite_int){
+    let sprite_name = 'sprite_' + sprite_names[sprite_int];
     scene.playerMap[id] = scene.add.container(x,y);
-    let sprite = scene.add.sprite(0,0,'sprite');
-	scene.playerMap[id].add(sprite);    
-    
+
     // initialize playerObjects
     scene.playerMap[id].playerObjects = {
         text: null,
         timer: null,
-        name: null
+        name: null,
+        sprite: null,
+        sprite_name: sprite_name
     };
+
+    let sprite = scene.add.sprite(0,0,sprite_name);
+    sprite.setScale(2.5);
+    sprite.anims.play(sprite_name + '_idle', true);
+    scene.playerMap[id].playerObjects.sprite = sprite;
+	scene.playerMap[id].add(sprite);    
+
     if (name != null) {
         namePlayer(id, name)
     }
@@ -110,11 +162,20 @@ movePlayer = function(id,x,y){
     let duration = distance*2;
     let dx = x - player.x;
     let dy = y - player.y;
+    let anim;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        anim = dx > 0 ? 'right' : 'left';
+    } else {
+        anim = dy < 0 ? 'up' : 'down';
+    }
+    let sprite_name = player.playerObjects.sprite_name;
     scene.tweens.add({
     	targets: player,
-    	x: "+=" + dx,
-    	y: "+=" + dy,
-    	duration: duration
+    	x: x,
+    	y: y,
+    	duration: duration,
+        onStart: function () { player.playerObjects.sprite.anims.play(sprite_name + '_' + anim, true);},
+        onComplete: function () { player.playerObjects.sprite.anims.play(sprite_name + '_idle', true);}
     });
 };
 
