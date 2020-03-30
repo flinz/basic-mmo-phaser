@@ -23,7 +23,8 @@ io.on('connection',function(socket){
         socket.player = {
             id: server.lastPlayderID++,
             x: randomInt(100,400),
-            y: randomInt(100,400)
+            y: randomInt(100,400),
+            name: "Anon"
         };
         socket.emit('allplayers',getAllPlayers());
         socket.broadcast.emit('newplayer',socket.player);
@@ -38,6 +39,12 @@ io.on('connection',function(socket){
         socket.on('chat',function(data){
             console.log('chat by player ' + socket.player.id + ': ' + data.text);
             io.emit('chat', {id: socket.player.id, text: data.text} );
+        });
+
+        socket.on('name',function(data){
+            console.log('player ' + socket.player.id + ' set name: ' + data.text);
+            socket.player.name = data.text;
+            io.emit('name', {id: socket.player.id, text: data.text} );
         });
 
         socket.on('disconnect',function(){

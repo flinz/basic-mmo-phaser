@@ -22,13 +22,17 @@ Client.sendChat = function(text){
   Client.socket.emit('chat',{text: text});
 };
 
+Client.sendName = function(text){
+    Client.socket.emit('name',{text: text});
+};
+
 Client.socket.on('newplayer',function(data){
     addNewPlayer(data.id,data.x,data.y);
 });
 
 Client.socket.on('allplayers',function(data){
     for(var i = 0; i < data.length; i++){
-        addNewPlayer(data[i].id,data[i].x,data[i].y);
+        addNewPlayer(data[i].id,data[i].x,data[i].y,data[i].name);
     }
 
     Client.socket.on('move',function(data){
@@ -37,6 +41,10 @@ Client.socket.on('allplayers',function(data){
 
     Client.socket.on('chat',function(data){
         sayPlayer(data.id,data.text);
+    });
+
+    Client.socket.on('name',function(data){
+        namePlayer(data.id,data.text);
     });
 
     Client.socket.on('remove',function(id){

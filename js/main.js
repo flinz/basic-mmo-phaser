@@ -33,37 +33,52 @@ function preload() {
     this.load.tilemapTiledJSON('map', 'assets/map/example_map.json');
     this.load.spritesheet('tileset', 'assets/map/tilesheet.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image('sprite','assets/sprites/sprite.png');
-    this.load.html('nameform', 'assets/text/form.html');
+    this.load.html('chatform', 'assets/text/form_chat.html');
+    this.load.html('nameform', 'assets/text/form_name.html');
 }
 
 let scene;
-let playerText = { text: null, timer: null};
 
 function create(){
 
 	scene = this;
     this.playerMap = {};
     this.map = this.add.tilemap('map');
-    var tileset = this.map.addTilesetImage('tilesheet', 'tileset'); // tilesheet is the key of the tileset in map's JSON file
-    var layer;
-    for(var i = 0; i < this.map.layers.length; i++) {
+    let tileset = this.map.addTilesetImage('tilesheet', 'tileset'); // tilesheet is the key of the tileset in map's JSON file
+    let layer;
+    for(let i = 0; i < this.map.layers.length; i++) {
         layer = this.map.createStaticLayer(i, tileset);
     }
     layer.inputEnabled = true; // Allows clicking on the map ; it's enough to do it on the last layer
     this.input.on('pointerup', getCoordinates, this);
 
-    this.add.dom(24*32 - 100, 17*32 - 20).createFromCache('nameform');
+    // Add chat form
+    this.add.dom(24*32 - 100, 17*32 - 20).createFromCache('chatform');
+    // Add name form
+    nameform = this.add.dom(100, 17*32 - 20).createFromCache('nameform');
+
     let keyObj = scene.input.keyboard.addKey('ENTER');
     keyObj.on('up', function() {
-    	var inputText = document.getElementById('nameField');
-    	if (inputText.value !== '') {
-    		sendChat(inputText.value);
-    		inputText.value = '';	
-    	}
+        let inputText = document.getElementById('chatField');
+        if (inputText.value !== '') {
+            sendChat(inputText.value);
+            inputText.value = '';
+        }
+
+        inputText = document.getElementById('nameField');
+        if (inputText.value !== '') {
+            sendName(inputText.value);
+            inputText.value = '';
+            nameform.destroy();
+        }
     });
 
  	Client.askNewPlayer();
 }
+
+sendName = function(text){
+    Client.sendName(text);
+};
 
 sendChat = function(text){
     Client.sendChat(text);
@@ -73,13 +88,20 @@ getCoordinates = function(pointer){
     Client.sendClick(pointer.worldX, pointer.worldY);
 };
 
-addNewPlayer = function(id,x,y){
+addNewPlayer = function(id,x,y,name){
     scene.playerMap[id] = scene.add.container(x,y);
     let sprite = scene.add.sprite(0,0,'sprite');
 	scene.playerMap[id].add(sprite);    
     
     // initialize playerObjects
-    scene.playerMap[id].playerObjects = {};
+    scene.playerMap[id].playerObjects = {
+        text: null,
+        timer: null,
+        name: null
+    };
+    if (name != null) {
+        namePlayer(id, name)
+    }
 };
 
 movePlayer = function(id,x,y){
@@ -108,30 +130,43 @@ function tweenAndRemoveObj(obj, duration) {
     })
 }
 
-sayPlayer = function(id,text){
+sayPlayer = function(id, text) {
     let player = scene.playerMap[id];
-    let style = { font: "14px Arial", fill: "#000000", align: "center"};
-    if (playerText.text != null) {
-        if (playerText.timer != null) {
-            playerText.timer.remove();
-            playerText.timer = null;
+    let playerObjs = player.playerObjects;
+    let style = { font: "14px Arial", fill: "#222222", align: "center"};
+    if (playerObjs.text != null) {
+        if (playerObjs.timer != null) {
+            playerObjs.timer.remove();
+            playerObjs.timer = null;
         }
-        tweenAndRemoveObj(playerText.text, 10);
-        playerText.text = null;
+        tweenAndRemoveObj(playerObjs.text, 10);
+        playerObjs.text = null;
     }
-    playerText.text = scene.add.text(0, 0, text, style);
-    playerText.text.setOrigin(0.5, 2.5);
-    player.add(playerText.text);
+    playerObjs.text = scene.add.text(0, 0, text, style);
+    playerObjs.text.setOrigin(0.5, 2.5);
+    player.add(playerObjs.text);
 
     let text_len = text.length;
-    playerText.timer = scene.time.addEvent({
+    playerObjs.timer = scene.time.addEvent({
     	delay: 2000 + 1000 * text_len / 10,
     	callback: function() {
-    		if (playerText.text != null) {
-                tweenAndRemoveObj(playerText.text, 1500);
+    		if (playerObjs.text != null) {
+                tweenAndRemoveObj(playerObjs.text, 1500);
     		}
     	}
     });
+};
+
+namePlayer = function(id, text) {
+    let player = scene.playerMap[id];
+    let playerObjs = player.playerObjects;
+    if (playerObjs.name != null) {
+        playerObjs.name.destroy();
+    }
+    let style = { font: "11px Arial", fill: "#000000", align: "center"};
+    playerObjs.name = scene.add.text(0, 0, text, style);
+    playerObjs.name.setOrigin(0.5, -1.8);
+    player.add(playerObjs.name);
 };
 
 removePlayer = function(id){
