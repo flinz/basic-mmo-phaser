@@ -29,7 +29,13 @@ game = new Phaser.Game(config);
  * E-mail: jerome.renaux@gmail.com
  */
 
-let sprite_names = ['guy', 'albert', 'bartender', 'drunkard0', 'drunkard1'];
+let sprite_n = 16;
+let sprite_n_row = 8;
+let sprite_width = 3;
+let sprite_height = 4;
+let sprite_row_up = 3;
+let sprite_row_left = 1;
+let sprite_row_right = 2;
 
 function preload() {
     this.load.tilemapTiledJSON('map', 'assets/map/example_map.json');
@@ -39,11 +45,9 @@ function preload() {
     this.load.html('chatform', 'assets/text/form_chat.html');
     this.load.html('nameform', 'assets/text/form_name.html');
 
-    for (const sprite_name of sprite_names) {
-        this.load.spritesheet('sprite_' + sprite_name,
-            'assets/sprites/characters/' + sprite_name + '.png',
-            { frameWidth: 16, frameHeight: 16 });
-    }
+    this.load.spritesheet('sprites',
+        'assets/sprites/characters/sprites_finalbossblues_larger_all.png',
+        { frameWidth: 78, frameHeight: 108 });
 }
 
 let scene;
@@ -82,36 +86,55 @@ function create(){
         }
     });
 
-    for (const sprite_key of sprite_names) {
-        let sprite_name = 'sprite_' + sprite_key;
+    for (let sprite_int=0; sprite_int<sprite_n; sprite_int++) {
+
+        let sprite_name = 'sprite_' + sprite_int;
+        console.log('sprite config: ' + sprite_int);
+        console.log(sprite_name);
+        let sprite_row = Math.floor(sprite_int/sprite_n_row);
+        let sprite_col = (sprite_int % sprite_n_row);
+
+        console.log('row_offset: ' + sprite_row);
+        console.log('col_offset: ' + sprite_col);
+
+        let frame_down = sprite_row * sprite_height * sprite_width * sprite_n_row + sprite_col * sprite_width;
+        let frame_up = frame_down + sprite_row_up * (sprite_width * sprite_n_row);
+        let frame_left = frame_down + sprite_row_left * (sprite_width * sprite_n_row);
+        let frame_right = frame_down + sprite_row_right * (sprite_width * sprite_n_row);
+
+        console.log('down: ' + frame_down);
+        console.log('up: ' + frame_up);
+        console.log('left: ' + frame_left);
+        console.log('right: ' + frame_right);
+
         // sprites
         scene.anims.create({
             key: sprite_name + '_idle',
-            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [2,2,2,12]}),
+            frames: scene.anims.generateFrameNumbers('sprites', {frames: [frame_down+1,frame_down+1,frame_down+1,frame_down]}),
             frameRate: 1,
             repeat: -1
         });
         scene.anims.create({
             key: sprite_name + '_left',
-            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [16,17]}),
+            frames: scene.anims.generateFrameNumbers('sprites', {frames: [frame_left,frame_left+1,frame_left+2]}),
             frameRate: 8,
             repeat: -1
         });
         scene.anims.create({
             key: sprite_name + '_right',
-            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [8,9]}),
+            frames: scene.anims.generateFrameNumbers('sprites', {frames: [frame_right,frame_right+1,frame_right+2]}),
             frameRate: 8,
             repeat: -1
         });
         scene.anims.create({
             key: sprite_name + '_up',
-            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [4,5]}),
+            frames: scene.anims.generateFrameNumbers('sprites', {frames: [frame_up,frame_up+1,frame_up+2]}),
             frameRate: 8,
             repeat: -1
         });
         scene.anims.create({
             key: sprite_name + '_down',
-            frames: scene.anims.generateFrameNumbers(sprite_name, {frames: [12,13]}),
+            frames: scene.anims.generateFrameNumbers('sprites', {frames: [frame_down,frame_down+1,frame_down+2]}),
             frameRate: 8,
             repeat: -1
         });
@@ -133,7 +156,7 @@ getCoordinates = function(pointer){
 };
 
 addNewPlayer = function(id,x,y,name,sprite_int){
-    let sprite_name = 'sprite_' + sprite_names[sprite_int];
+
     scene.playerMap[id] = scene.add.container(x,y);
 
     // initialize playerObjects
@@ -142,11 +165,12 @@ addNewPlayer = function(id,x,y,name,sprite_int){
         timer: null,
         name: null,
         sprite: null,
-        sprite_name: sprite_name
+        sprite_int: sprite_int
     };
 
-    let sprite = scene.add.sprite(0,0,sprite_name);
-    sprite.setScale(2.5);
+    let sprite = scene.add.sprite(0,0,'sprites');
+    sprite.setScale(0.45);
+    let sprite_name = 'sprite_' + sprite_int;
     sprite.anims.play(sprite_name + '_idle', true);
     scene.playerMap[id].playerObjects.sprite = sprite;
 	scene.playerMap[id].add(sprite);    
@@ -168,7 +192,7 @@ movePlayer = function(id,x,y){
     } else {
         anim = dy < 0 ? 'up' : 'down';
     }
-    let sprite_name = player.playerObjects.sprite_name;
+    let sprite_name = 'sprite_' + player.playerObjects.sprite_int;
     scene.tweens.add({
     	targets: player,
     	x: x,
@@ -194,7 +218,7 @@ function tweenAndRemoveObj(obj, duration) {
 sayPlayer = function(id, text) {
     let player = scene.playerMap[id];
     let playerObjs = player.playerObjects;
-    let style = { font: "14px Arial", fill: "#222222", align: "center"};
+    let style = { font: "14px Arial", fill: "#111111", align: "center", strokeThickness: 3, stroke: '#dddddd', fontWeight: 'regular'};
     if (playerObjs.text != null) {
         if (playerObjs.timer != null) {
             playerObjs.timer.remove();
@@ -204,7 +228,7 @@ sayPlayer = function(id, text) {
         playerObjs.text = null;
     }
     playerObjs.text = scene.add.text(0, 0, text, style);
-    playerObjs.text.setOrigin(0.5, 2.5);
+    playerObjs.text.setOrigin(0.5, 2.3);
     player.add(playerObjs.text);
 
     let text_len = text.length;

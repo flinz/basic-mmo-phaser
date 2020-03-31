@@ -2,7 +2,7 @@ var express = require('express');
 var app = express();
 var server = require('http').Server(app);
 var io = require('socket.io').listen(server);
-var sprite_names = ['guy', 'albert', 'bartender', 'drunkard0', 'drunkard1'];
+var n_sprites = 16;
 
 
 app.use('/css',express.static(__dirname + '/css'));
@@ -23,7 +23,7 @@ io.on('connection',function(socket){
 
     socket.on('newplayer',function(){
 
-        let sprite_int = Math.floor(Math.random() * sprite_names.length);
+        let sprite_int = Math.floor(Math.random() * n_sprites);
 
         socket.player = {
             id: server.lastPlayderID++,
@@ -32,6 +32,8 @@ io.on('connection',function(socket){
             name: "Anon",
             sprite_int: sprite_int
         };
+
+        console.log('Player joined: ' + JSON.stringify(socket.player));
 
         socket.emit('allplayers',getAllPlayers());
         socket.broadcast.emit('newplayer', socket.player);
